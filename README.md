@@ -73,3 +73,11 @@ go test -v ./tests/
 ```
 
 Each test file spins up a real in-process HTTP server via `httptest.NewServer`, runs its assertions against it, then tears it down when the test binary exits. The server setup and shared `client`/`redir` helpers live in `tests/main_test.go`.
+
+---
+
+## Attribution
+
+gompster's API contract and user interface are based on [httpbin](https://github.com/postmanlabs/httpbin), the open-source HTTP request & response testing service originally created by Kenneth Reitz.
+
+httpbin is licensed under the [ISC License](https://github.com/postmanlabs/httpbin/blob/master/LICENSE) © 2017 Kenneth Reitz.
