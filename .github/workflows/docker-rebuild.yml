@@ -1,0 +1,74 @@
+name: Rebuild Docker Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to build and push (e.g. v0.0.1)"
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Docker (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ distroless, alpine-rootless, alpine ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tags produced for each variant on v1.2.3:
+      #
+      # distroless:      latest, v1.2.3, distroless, v1.2.3-distroless
+      # alpine-rootless:          alpine-rootless, v1.2.3-alpine-rootless
+      # alpine:                   alpine, v1.2.3-alpine
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ matrix.variant == 'distroless' }}
+          tags: |
+            # Bare semver (e.g. v1.2.3) — distroless only; "latest" comes from flavor above
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ matrix.variant == 'distroless' }}
+            # Version-first variant tag for all three (e.g. v1.2.3-distroless, v1.2.3-alpine)
+            type=raw,value=${{ github.event.inputs.tag }}-${{ matrix.variant }}
+            # Bare variant tag (e.g. "distroless", "alpine-rootless", "alpine")
+            type=raw,value=${{ matrix.variant }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: ${{ matrix.variant }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,scope=${{ matrix.variant }},mode=max
+          platforms: linux/amd64,linux/arm64
