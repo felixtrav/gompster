@@ -1,0 +1,23 @@
+# Compiled binaries and test output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+.DS_Store
+# Cross-compiled build output
+dist/
+
+# Dependency vendoring (if ever used)
+vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Coverage reports
+coverage.out
+coverage.html

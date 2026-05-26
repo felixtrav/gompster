@@ -1,0 +1,48 @@
+repos:
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args:
+          - --maxkb=1024
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-yaml
+      - id: check-json
+      - id: pretty-format-json
+        args:
+          - --autofix
+          - --indent=2
+          - --no-sort-keys
+
+  # Ensure go.mod and go.sum are tidy after any changes to them.
+  # If this hook modifies files, re-stage and commit again.
+  - repo: local
+    hooks:
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: go mod tidy
+        language: system
+        files: (go\.mod|go\.sum)$
+        pass_filenames: false
+
+  # Build check — catches compile errors before they're committed.
+  - repo: local
+    hooks:
+      - id: go-build
+        name: go build
+        entry: go build ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+
+  # golangci-lint — runs gofmt, go vet, staticcheck, and many more linters.
+  # pre-commit installs it automatically via `go install`; no separate install needed.
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.1.6
+    hooks:
+      - id: golangci-lint
+        args: [--timeout=2m]
